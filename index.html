@@ -1,40 +1,67 @@
-<!DOCTYPE html>
+!DOCTYPE html>
 <html>
 <head>
   <title>Boston Hospital Finder</title>
   <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-  <!-- TODO: Ticket 1 — add Leaflet CSS link here -->
+  <!-- Ticket 1: Leaflet CSS -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 
   <style>
+    @import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,500;0,9..40,700;1,9..40,400&display=swap');
+
     * { box-sizing: border-box; margin: 0; padding: 0; }
-    body { font-family: Arial, sans-serif; background: #f5f5f5; }
+    body { font-family: 'DM Sans', sans-serif; background: #f0f2f5; }
 
     #header {
-      background: #003087; color: white;
+      background: linear-gradient(135deg, #003087 0%, #001a4d 100%);
+      color: white;
       padding: 16px 24px;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.18);
+      position: relative;
+      z-index: 10;
     }
-    #header h1 { font-size: 22px; }
-    #header p  { font-size: 13px; opacity: 0.8; margin-top: 4px; }
+    #header h1 { font-size: 21px; font-weight: 700; letter-spacing: -0.3px; }
+    #header p  { font-size: 12.5px; opacity: 0.7; margin-top: 2px; font-weight: 300; }
 
     #controls {
-      background: white; padding: 14px 24px;
+      background: white; padding: 12px 24px;
       display: flex; gap: 10px; flex-wrap: wrap; align-items: center;
       border-bottom: 1px solid #ddd;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+      position: relative;
+      z-index: 9;
     }
     input, select, button {
-      padding: 8px 12px; font-size: 15px;
-      border: 1px solid #ccc; border-radius: 4px;
+      padding: 9px 14px; font-size: 14px;
+      border: 1px solid #ccc; border-radius: 6px;
+      font-family: inherit;
+      transition: border-color 0.2s;
     }
-    button { background: #003087; color: white; border: none; cursor: pointer; }
+    input:focus, select:focus { outline: none; border-color: #003087; box-shadow: 0 0 0 2px rgba(0,48,135,0.12); }
+    button {
+      background: #003087; color: white; border: none; cursor: pointer;
+      font-weight: 600; letter-spacing: 0.3px;
+      transition: background 0.2s, transform 0.1s;
+    }
     button:hover { background: #00205b; }
+    button:active { transform: scale(0.97); }
 
     #main { display: flex; height: calc(100vh - 110px); }
 
-    /* TODO: Ticket 1 — add #map style here */
+    /* Ticket 1: Map styles */
+    #map {
+      flex: 1;
+      min-width: 0;
+    }
 
     #sidebar {
-      width: 100%; /* TODO: Ticket 1 — change to 320px once map is added */
+      width: 340px;
+      min-width: 340px;
       background: white;
       border-left: 1px solid #ddd;
       display: flex; flex-direction: column;
@@ -42,36 +69,86 @@
     }
     #sidebar-header {
       padding: 12px 16px; background: #f9f9f9;
-      border-bottom: 1px solid #ddd; font-size: 13px; color: #555;
+      border-bottom: 1px solid #ddd; font-size: 12.5px; color: #555;
+      font-weight: 500;
     }
     #results { overflow-y: auto; flex: 1; padding: 10px; }
     #loading {
-      display: none; padding: 20px;
-      text-align: center; color: #555; font-size: 14px;
+      display: none; padding: 30px 20px;
+      text-align: center; color: #888; font-size: 14px;
     }
+    .spinner {
+      display: inline-block; width: 22px; height: 22px;
+      border: 3px solid #ddd; border-top-color: #003087;
+      border-radius: 50%; animation: spin 0.7s linear infinite;
+      margin-bottom: 8px;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
 
     .hospital-card {
-      border: 1px solid #ddd; border-radius: 6px;
-      padding: 10px 12px; margin-bottom: 8px;
-      cursor: pointer; transition: border-color 0.2s;
+      border: 1px solid #e2e2e2; border-radius: 8px;
+      padding: 12px 14px; margin-bottom: 8px;
+      cursor: pointer; transition: all 0.2s;
+      background: white;
     }
-    .hospital-card:hover { border-color: #003087; }
-    .hospital-card.active { border-color: #003087; background: #f0f4ff; }
-    .hospital-name { font-weight: bold; font-size: 14px; }
-    .hospital-meta { font-size: 12px; color: #666; margin-top: 3px; }
+    .hospital-card:hover { border-color: #003087; box-shadow: 0 2px 8px rgba(0,48,135,0.08); }
+    .hospital-card.active { border-color: #003087; background: #f0f4ff; box-shadow: 0 2px 8px rgba(0,48,135,0.12); }
+    .hospital-name { font-weight: 600; font-size: 14px; color: #1a1a2e; }
+    .hospital-meta { font-size: 12px; color: #777; margin-top: 4px; line-height: 1.5; }
     .dist-badge {
       display: inline-block; background: #003087; color: white;
-      border-radius: 10px; padding: 1px 8px; font-size: 11px; margin-left: 6px;
+      border-radius: 10px; padding: 2px 9px; font-size: 11px; margin-left: 6px;
+      font-weight: 600; vertical-align: middle;
     }
 
-    /* TODO: Ticket 2 — add popup styles here if needed */
+    /* Ticket 2: Popup styles */
+    .leaflet-popup-content-wrapper {
+      border-radius: 10px !important;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.18) !important;
+      padding: 0 !important;
+    }
+    .leaflet-popup-content { margin: 0 !important; min-width: 260px; }
+    .popup-wrap { padding: 14px 16px; font-family: 'DM Sans', sans-serif; }
+    .popup-wrap h3 { font-size: 14px; color: #003087; margin-bottom: 2px; font-weight: 700; }
+    .popup-wrap .popup-addr { font-size: 11.5px; color: #777; margin-bottom: 10px; }
+    .popup-wrap .popup-section-title {
+      font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.8px;
+      color: #999; font-weight: 600; margin-bottom: 6px;
+    }
+    .vuln-table { width: 100%; font-size: 12px; border-collapse: collapse; }
+    .vuln-table td { padding: 4px 0; }
+    .vuln-table td:first-child { color: #555; }
+    .vuln-table td:last-child { text-align: right; font-weight: 600; color: #1a1a2e; }
+    .vuln-bar-bg {
+      height: 5px; background: #eee; border-radius: 3px; margin-top: 2px; width: 100%;
+    }
+    .vuln-bar {
+      height: 100%; border-radius: 3px; transition: width 0.4s;
+    }
+    .no-vuln { font-size: 11.5px; color: #aaa; font-style: italic; }
+
+    .empty-state {
+      display: flex; flex-direction: column; align-items: center;
+      justify-content: center; height: 100%; color: #aaa; padding: 40px 20px;
+      text-align: center;
+    }
+    .empty-state svg { margin-bottom: 14px; opacity: 0.35; }
+    .empty-state p { font-size: 13px; line-height: 1.6; }
+
+    @media (max-width: 768px) {
+      #main { flex-direction: column; height: auto; }
+      #map { height: 50vh; }
+      #sidebar { width: 100%; min-width: 100%; height: 50vh; }
+    }
   </style>
 </head>
 <body>
 
 <div id="header">
-  <h1>🏥 Boston Hospital Finder</h1>
-  <p>Find nearby hospitals and explore neighborhood vulnerability across Boston</p>
+  <div>
+    <h1>🏥 Boston Hospital Finder</h1>
+    <p>Find nearby hospitals and explore neighborhood vulnerability across Boston</p>
+  </div>
 </div>
 
 <div id="controls">
@@ -86,17 +163,23 @@
 </div>
 
 <div id="main">
-
-  <!-- TODO: Ticket 1 — add <div id="map"></div> here -->
+  <!-- Ticket 1: Map container -->
+  <div id="map"></div>
 
   <div id="sidebar">
     <div id="sidebar-header">Enter a ZIP code to find nearby hospitals</div>
-    <div id="loading">⏳ Loading data...</div>
-    <div id="results"></div>
+    <div id="loading"><div class="spinner"></div><br>Loading hospital data…</div>
+    <div id="results">
+      <div class="empty-state">
+        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#bbb" stroke-width="1.5"><path d="M21 10c0 6-9 13-9 13S3 16 3 10a9 9 0 1 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+        <p>Search by ZIP code to discover<br>hospitals in your area</p>
+      </div>
+    </div>
   </div>
 </div>
 
-<!-- TODO: Ticket 1 — add Leaflet JS script tag here -->
+<!-- Ticket 1: Leaflet JS -->
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
 <script>
 // ── Data URLs ──
@@ -104,16 +187,24 @@ const HOSPITAL_CSV = "https://data.boston.gov/dataset/d9871e89-2d1e-4ecf-b0de-04
 const VULN_CSV     = "https://bostonopendata-boston.opendata.arcgis.com/api/download/v1/items/34f2c48b670d4b43a617b1540f20efe3/csv?layers=0";
 
 // ── State ──
-// TODO: Ticket 1 — add map and markersLayer variables here
-let vulnByNeigh = {}; // stores vulnerability scores keyed by neighborhood name
+let map, markersLayer;
+let vulnByNeigh = {};
 
-// ── TODO: Ticket 1 — add initMap() function here ──
-// Should:
-// 1. Create a Leaflet map centered on Boston [42.3601, -71.0589] zoom 12
-// 2. Add OpenStreetMap tile layer
-// 3. Create a markersLayer (L.layerGroup) and add to map
+// ── Ticket 1: initMap ──
+function initMap() {
+  map = L.map('map', {
+    zoomControl: true
+  }).setView([42.3601, -71.0589], 12);
 
-// ── Robust CSV parser (handles quoted fields with embedded commas and newlines) ──
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+    maxZoom: 19
+  }).addTo(map);
+
+  markersLayer = L.layerGroup().addTo(map);
+}
+
+// ── Robust CSV parser ──
 function parseCSV(text) {
   const results = [];
   let i = 0, headers = null;
@@ -155,16 +246,14 @@ function parseCSV(text) {
   return results;
 }
 
-// ── Euclidean distance in miles ──
-// 1 degree latitude ≈ 69 miles, 1 degree longitude ≈ 52 miles in Boston
-// Simple and accurate enough for short local distances
+// ── Distance in miles ──
 function distMiles(lat1, lon1, lat2, lon2) {
   const dLat = (lat2 - lat1) * 69;
   const dLon = (lon2 - lon1) * 52;
   return Math.sqrt(dLat * dLat + dLon * dLon);
 }
 
-// ── ZIP → lat/lon using free Zippopotam API ──
+// ── ZIP → lat/lon ──
 async function getZipCoords(zip) {
   const res = await fetch(`https://api.zippopotam.us/us/${zip}`);
   if (!res.ok) return null;
@@ -177,32 +266,96 @@ async function getZipCoords(zip) {
   };
 }
 
-// ── TODO: Ticket 1 — add makeMarker(lat, lon) function here ──
-// Use L.circleMarker, radius 10, blue fill, white border
+// ── Ticket 1: makeMarker ──
+function makeMarker(lat, lon) {
+  return L.circleMarker([lat, lon], {
+    radius: 10,
+    fillColor: '#003087',
+    color: '#ffffff',
+    weight: 2.5,
+    fillOpacity: 0.85
+  });
+}
 
-// ── TODO: Ticket 2 — add loadVulnerability() function here ──
-// Should:
-// 1. Fetch VULN_CSV and parse it
-// 2. Group rows by neighborhood Name (multiple census tracts per neighborhood)
-// 3. For each neighborhood sum up the population and your chosen factors across all tracts
-// 4. Calculate each chosen factor as a percentage of total population:
-//    e.g. olderPct = (totalOlderAdult / totalPOP) * 100
-// 5. Store your chosen percentages in vulnByNeigh keyed by uppercase neighborhood name
-//
-// Available columns to choose from (pick at least 2):
-//   OlderAdult  — residents over 65
-//   TotChild    — children under 5
-//   Low_to_No   — low or no income households
-//   TotDis      — people with disabilities
-//   LEP         — limited English proficiency
-//
-// Think about: which factors are most relevant to hospital access?
+// ── Ticket 2: loadVulnerability ──
+async function loadVulnerability() {
+  if (Object.keys(vulnByNeigh).length > 0) return; // already loaded
+  try {
+    const text = await fetch(VULN_CSV).then(r => r.text());
+    const rows = parseCSV(text);
 
-// ── TODO: Ticket 2 — add makePopupHTML(hospital, vuln) function here ──
-// Should show:
-// - Hospital name and address
-// - A breakdown table: % elderly, % children under 5,
-//   % low income, % disabilities, % limited English
+    // Group by neighborhood, summing population and vulnerability factors
+    const grouped = {};
+    rows.forEach(row => {
+      const name = (row["NAME"] || row["NEIGHBORHOOD"] || "").trim().toUpperCase();
+      if (!name) return;
+      if (!grouped[name]) grouped[name] = { pop: 0, older: 0, child: 0, lowInc: 0, dis: 0, lep: 0 };
+      const g = grouped[name];
+      g.pop    += parseFloat(row["POP"]       || row["TOTALPOP"] || 0) || 0;
+      g.older  += parseFloat(row["OLDERADULT"]|| row["OLDER_ADULT"] || 0) || 0;
+      g.child  += parseFloat(row["TOTCHILD"]  || row["TOT_CHILD"] || row["TОТCHILD"] || 0) || 0;
+      g.lowInc += parseFloat(row["LOW_TO_NO"] || 0) || 0;
+      g.dis    += parseFloat(row["TOTDIS"]    || row["TOT_DIS"] || 0) || 0;
+      g.lep    += parseFloat(row["LEP"]       || 0) || 0;
+    });
+
+    // Calculate percentages
+    for (const [name, g] of Object.entries(grouped)) {
+      if (g.pop <= 0) continue;
+      vulnByNeigh[name] = {
+        olderPct:  (g.older  / g.pop) * 100,
+        childPct:  (g.child  / g.pop) * 100,
+        lowIncPct: (g.lowInc / g.pop) * 100,
+        disPct:    (g.dis    / g.pop) * 100,
+        lepPct:    (g.lep    / g.pop) * 100,
+        pop:       g.pop
+      };
+    }
+  } catch (e) {
+    console.warn("Could not load vulnerability data:", e);
+  }
+}
+
+// ── Ticket 2: makePopupHTML ──
+function makePopupHTML(hospital, vuln) {
+  const addr = hospital.AD || hospital.ADDRESS || "Address unavailable";
+  const neigh = hospital.NEIGH || hospital.NEIGHBORHOOD || "";
+
+  let vulnHTML = '';
+  if (vuln) {
+    const bars = [
+      { label: "Elderly (65+)",       pct: vuln.olderPct,  color: "#e74c3c" },
+      { label: "Children (<5)",       pct: vuln.childPct,  color: "#f39c12" },
+      { label: "Low/No Income",       pct: vuln.lowIncPct, color: "#8e44ad" },
+      { label: "Disabilities",        pct: vuln.disPct,    color: "#2980b9" },
+      { label: "Limited English",     pct: vuln.lepPct,    color: "#27ae60" },
+    ];
+    vulnHTML = `
+      <div class="popup-section-title">Neighborhood Vulnerability — ${neigh}</div>
+      <table class="vuln-table">
+        ${bars.map(b => `
+          <tr>
+            <td>${b.label}</td>
+            <td style="width:55%">
+              <div class="vuln-bar-bg"><div class="vuln-bar" style="width:${Math.min(b.pct, 100)}%;background:${b.color}"></div></div>
+            </td>
+            <td>${b.pct.toFixed(1)}%</td>
+          </tr>
+        `).join('')}
+      </table>
+    `;
+  } else if (neigh) {
+    vulnHTML = `<p class="no-vuln">No vulnerability data for ${neigh}</p>`;
+  }
+
+  return `
+    <div class="popup-wrap">
+      <h3>${hospital.NAME}</h3>
+      <div class="popup-addr">📍 ${addr}</div>
+      ${vulnHTML}
+    </div>
+  `;
+}
 
 // ── Render sidebar cards ──
 function renderSidebar(matches, markers) {
@@ -221,13 +374,16 @@ function renderSidebar(matches, markers) {
     card.onclick = () => {
       document.querySelectorAll(".hospital-card").forEach(c => c.classList.remove("active"));
       card.classList.add("active");
-      // TODO: Ticket 1 — pan map and open popup: markers[idx].openPopup(); map.panTo(...)
+      if (markers[idx]) {
+        markers[idx].openPopup();
+        map.panTo([h.lat, h.lon], { animate: true });
+      }
     };
     resultsDiv.appendChild(card);
   });
 }
 
-// ── Main search function ──
+// ── Main search ──
 async function findHospitals() {
   const zipInput   = document.getElementById("zip").value.trim();
   const radius     = parseFloat(document.getElementById("radius").value);
@@ -242,9 +398,8 @@ async function findHospitals() {
 
   loading.style.display = "block";
   resultsDiv.innerHTML  = "";
-  // TODO: Ticket 1 — clear existing markers: markersLayer.clearLayers()
+  markersLayer.clearLayers();
 
-  // Step 1: convert ZIP to coordinates
   const coords = await getZipCoords(zipInput);
   if (!coords) {
     loading.style.display = "none";
@@ -252,13 +407,13 @@ async function findHospitals() {
     return;
   }
 
-  // Step 2: fetch hospital CSV
-  // TODO: Ticket 2 — also load vulnerability data here using Promise.all
-  const hospText  = await fetch(HOSPITAL_CSV).then(r => r.text());
+  // Fetch hospitals & vulnerability data in parallel
+  const [hospText] = await Promise.all([
+    fetch(HOSPITAL_CSV).then(r => r.text()),
+    loadVulnerability()
+  ]);
   const hospitals = parseCSV(hospText);
 
-  // Step 3: extract coordinates from Location field and filter by radius
-  // Location field format: "(42.336, -71.107)"
   const coordRx = /\(\s*([-\d.]+),\s*([-\d.]+)\s*\)/;
   const matches = hospitals.map(h => {
     const m = (h["LOCATION"] || "").match(coordRx);
@@ -278,13 +433,24 @@ async function findHospitals() {
 
   sidebarHdr.textContent = `${matches.length} hospital${matches.length > 1 ? "s" : ""} within ${radius} miles of ${coords.city}, ${coords.state}`;
 
-  // Step 4: add markers to map
-  // TODO: Ticket 1 — loop matches, call makeMarker() and add each to markersLayer
-  // TODO: Ticket 1 — fit map to markers: map.fitBounds(L.featureGroup(markers).getBounds().pad(0.2))
-  // TODO: Ticket 2 — bind popup to each marker: marker.bindPopup(makePopupHTML(h, vuln))
-  const markers = []; // TODO: Ticket 1 — fill this array with your markers
+  // Add markers with popups
+  const markers = matches.map(h => {
+    const marker = makeMarker(h.lat, h.lon);
+    const neighKey = (h.NEIGH || h.NEIGHBORHOOD || "").trim().toUpperCase();
+    const vuln = vulnByNeigh[neighKey] || null;
+    marker.bindPopup(makePopupHTML(h, vuln), { maxWidth: 300 });
+    markersLayer.addLayer(marker);
+    return marker;
+  });
 
-  // Step 5: render sidebar
+  // Add a subtle marker for the searched ZIP location
+  L.circleMarker([coords.lat, coords.lon], {
+    radius: 7, fillColor: '#e74c3c', color: '#fff', weight: 2, fillOpacity: 0.9
+  }).bindPopup(`<div class="popup-wrap"><h3>📍 ${coords.city}, ${coords.state}</h3><div class="popup-addr">ZIP: ${zipInput}</div></div>`).addTo(markersLayer);
+
+  // Fit map to show all markers
+  map.fitBounds(L.featureGroup([...markers]).getBounds().pad(0.25));
+
   renderSidebar(matches, markers);
 }
 
@@ -294,7 +460,7 @@ document.getElementById("zip").addEventListener("keydown", e => {
 });
 
 // ── Boot ──
-// TODO: Ticket 1 — call initMap() here
+initMap();
 </script>
 </body>
 </html>
