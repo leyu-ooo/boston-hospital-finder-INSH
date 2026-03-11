@@ -1,11 +1,10 @@
-!DOCTYPE html>
+<!DOCTYPE html>
 <html>
 <head>
   <title>Boston Hospital Finder</title>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-  <!-- Ticket 1: Leaflet CSS -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 
   <style>
@@ -16,130 +15,57 @@
 
     #header {
       background: linear-gradient(135deg, #003087 0%, #001a4d 100%);
-      color: white;
-      padding: 16px 24px;
-      display: flex;
-      align-items: center;
-      gap: 14px;
+      color: white; padding: 16px 24px;
+      display: flex; align-items: center; gap: 14px;
       box-shadow: 0 2px 8px rgba(0,0,0,0.18);
-      position: relative;
-      z-index: 10;
+      position: relative; z-index: 10;
     }
-    #header h1 { font-size: 21px; font-weight: 700; letter-spacing: -0.3px; }
-    #header p  { font-size: 12.5px; opacity: 0.7; margin-top: 2px; font-weight: 300; }
+    #header h1 { font-size: 21px; font-weight: 700; }
+    #header p  { font-size: 12.5px; opacity: 0.7; font-weight: 300; }
 
     #controls {
       background: white; padding: 12px 24px;
       display: flex; gap: 10px; flex-wrap: wrap; align-items: center;
-      border-bottom: 1px solid #ddd;
-      box-shadow: 0 1px 4px rgba(0,0,0,0.06);
-      position: relative;
-      z-index: 9;
+      border-bottom: 1px solid #ddd; box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+      position: relative; z-index: 9;
     }
     input, select, button {
       padding: 9px 14px; font-size: 14px;
-      border: 1px solid #ccc; border-radius: 6px;
-      font-family: inherit;
-      transition: border-color 0.2s;
+      border: 1px solid #ccc; border-radius: 6px; font-family: inherit;
     }
-    input:focus, select:focus { outline: none; border-color: #003087; box-shadow: 0 0 0 2px rgba(0,48,135,0.12); }
     button {
       background: #003087; color: white; border: none; cursor: pointer;
-      font-weight: 600; letter-spacing: 0.3px;
-      transition: background 0.2s, transform 0.1s;
+      font-weight: 600; transition: background 0.2s;
     }
     button:hover { background: #00205b; }
-    button:active { transform: scale(0.97); }
 
     #main { display: flex; height: calc(100vh - 110px); }
-
-    /* Ticket 1: Map styles */
-    #map {
-      flex: 1;
-      min-width: 0;
-    }
-
+    #map { flex: 1; min-width: 0; }
     #sidebar {
-      width: 340px;
-      min-width: 340px;
-      background: white;
-      border-left: 1px solid #ddd;
-      display: flex; flex-direction: column;
-      overflow: hidden;
+      width: 340px; min-width: 340px; background: white;
+      border-left: 1px solid #ddd; display: flex; flex-direction: column; overflow: hidden;
     }
-    #sidebar-header {
-      padding: 12px 16px; background: #f9f9f9;
-      border-bottom: 1px solid #ddd; font-size: 12.5px; color: #555;
-      font-weight: 500;
-    }
+    #sidebar-header { padding: 12px 16px; background: #f9f9f9; border-bottom: 1px solid #ddd; font-size: 12.5px; }
     #results { overflow-y: auto; flex: 1; padding: 10px; }
-    #loading {
-      display: none; padding: 30px 20px;
-      text-align: center; color: #888; font-size: 14px;
-    }
-    .spinner {
-      display: inline-block; width: 22px; height: 22px;
-      border: 3px solid #ddd; border-top-color: #003087;
-      border-radius: 50%; animation: spin 0.7s linear infinite;
-      margin-bottom: 8px;
-    }
-    @keyframes spin { to { transform: rotate(360deg); } }
 
     .hospital-card {
       border: 1px solid #e2e2e2; border-radius: 8px;
-      padding: 12px 14px; margin-bottom: 8px;
-      cursor: pointer; transition: all 0.2s;
-      background: white;
+      padding: 12px 14px; margin-bottom: 8px; cursor: pointer; background: white;
     }
-    .hospital-card:hover { border-color: #003087; box-shadow: 0 2px 8px rgba(0,48,135,0.08); }
-    .hospital-card.active { border-color: #003087; background: #f0f4ff; box-shadow: 0 2px 8px rgba(0,48,135,0.12); }
-    .hospital-name { font-weight: 600; font-size: 14px; color: #1a1a2e; }
-    .hospital-meta { font-size: 12px; color: #777; margin-top: 4px; line-height: 1.5; }
+    .hospital-card:hover { border-color: #003087; }
+    .hospital-card.active { border-color: #003087; background: #f0f4ff; }
+    .hospital-name { font-weight: 600; font-size: 14px; }
     .dist-badge {
-      display: inline-block; background: #003087; color: white;
-      border-radius: 10px; padding: 2px 9px; font-size: 11px; margin-left: 6px;
-      font-weight: 600; vertical-align: middle;
+      background: #003087; color: white; border-radius: 10px;
+      padding: 2px 8px; font-size: 11px; margin-left: 6px;
     }
 
-    /* Ticket 2: Popup styles */
-    .leaflet-popup-content-wrapper {
-      border-radius: 10px !important;
-      box-shadow: 0 4px 20px rgba(0,0,0,0.18) !important;
-      padding: 0 !important;
-    }
-    .leaflet-popup-content { margin: 0 !important; min-width: 260px; }
-    .popup-wrap { padding: 14px 16px; font-family: 'DM Sans', sans-serif; }
-    .popup-wrap h3 { font-size: 14px; color: #003087; margin-bottom: 2px; font-weight: 700; }
-    .popup-wrap .popup-addr { font-size: 11.5px; color: #777; margin-bottom: 10px; }
-    .popup-wrap .popup-section-title {
-      font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.8px;
-      color: #999; font-weight: 600; margin-bottom: 6px;
-    }
-    .vuln-table { width: 100%; font-size: 12px; border-collapse: collapse; }
-    .vuln-table td { padding: 4px 0; }
-    .vuln-table td:first-child { color: #555; }
-    .vuln-table td:last-child { text-align: right; font-weight: 600; color: #1a1a2e; }
-    .vuln-bar-bg {
-      height: 5px; background: #eee; border-radius: 3px; margin-top: 2px; width: 100%;
-    }
-    .vuln-bar {
-      height: 100%; border-radius: 3px; transition: width 0.4s;
-    }
-    .no-vuln { font-size: 11.5px; color: #aaa; font-style: italic; }
-
-    .empty-state {
-      display: flex; flex-direction: column; align-items: center;
-      justify-content: center; height: 100%; color: #aaa; padding: 40px 20px;
-      text-align: center;
-    }
-    .empty-state svg { margin-bottom: 14px; opacity: 0.35; }
-    .empty-state p { font-size: 13px; line-height: 1.6; }
-
-    @media (max-width: 768px) {
-      #main { flex-direction: column; height: auto; }
-      #map { height: 50vh; }
-      #sidebar { width: 100%; min-width: 100%; height: 50vh; }
-    }
+    /* Popup & Vulnerability Styles */
+    .popup-wrap { padding: 10px; min-width: 220px; }
+    .popup-wrap h3 { font-size: 14px; color: #003087; margin-bottom: 4px; }
+    .vuln-table { width: 100%; font-size: 11px; border-collapse: collapse; margin-top: 8px; }
+    .vuln-bar-bg { height: 6px; background: #eee; border-radius: 3px; width: 100%; overflow: hidden; }
+    .vuln-bar { height: 100%; border-radius: 3px; }
   </style>
 </head>
 <body>
@@ -147,319 +73,175 @@
 <div id="header">
   <div>
     <h1>🏥 Boston Hospital Finder</h1>
-    <p>Find nearby hospitals and explore neighborhood vulnerability across Boston</p>
+    <p>Find nearby hospitals and explore neighborhood vulnerability</p>
   </div>
 </div>
 
 <div id="controls">
-  <input type="text" id="zip" placeholder="Enter ZIP code (e.g. 02115)" maxlength="5" style="width:220px">
+  <input type="text" id="zip" placeholder="Enter ZIP code (e.g. 02115)" maxlength="5">
   <select id="radius">
     <option value="1">Within 1 mile</option>
     <option value="5" selected>Within 5 miles</option>
     <option value="10">Within 10 miles</option>
-    <option value="25">Within 25 miles</option>
   </select>
   <button onclick="findHospitals()">Search</button>
 </div>
 
 <div id="main">
-  <!-- Ticket 1: Map container -->
   <div id="map"></div>
-
   <div id="sidebar">
-    <div id="sidebar-header">Enter a ZIP code to find nearby hospitals</div>
-    <div id="loading"><div class="spinner"></div><br>Loading hospital data…</div>
-    <div id="results">
-      <div class="empty-state">
-        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#bbb" stroke-width="1.5"><path d="M21 10c0 6-9 13-9 13S3 16 3 10a9 9 0 1 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
-        <p>Search by ZIP code to discover<br>hospitals in your area</p>
-      </div>
-    </div>
+    <div id="sidebar-header">Search results will appear here</div>
+    <div id="results"></div>
   </div>
 </div>
 
-<!-- Ticket 1: Leaflet JS -->
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
 <script>
-// ── Data URLs ──
 const HOSPITAL_CSV = "https://data.boston.gov/dataset/d9871e89-2d1e-4ecf-b0de-046f553027c0/resource/6222085d-ee88-45c6-ae40-0c7464620d64/download/hospital-locations.csv";
 const VULN_CSV     = "https://bostonopendata-boston.opendata.arcgis.com/api/download/v1/items/34f2c48b670d4b43a617b1540f20efe3/csv?layers=0";
 
-// ── State ──
 let map, markersLayer;
 let vulnByNeigh = {};
 
-// ── Ticket 1: initMap ──
+// ── Ticket 1: Initialize Map ──
 function initMap() {
-  map = L.map('map', {
-    zoomControl: true
-  }).setView([42.3601, -71.0589], 12);
-
+  map = L.map('map').setView([42.3601, -71.0589], 12);
   L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
-    maxZoom: 19
+    attribution: '&copy; OpenStreetMap'
   }).addTo(map);
-
   markersLayer = L.layerGroup().addTo(map);
 }
 
-// ── Robust CSV parser ──
-function parseCSV(text) {
-  const results = [];
-  let i = 0, headers = null;
-  function parseField() {
-    if (text[i] === '"') {
-      i++;
-      let val = "";
-      while (i < text.length) {
-        if (text[i] === '"' && text[i+1] === '"') { val += '"'; i += 2; }
-        else if (text[i] === '"') { i++; break; }
-        else val += text[i++];
-      }
-      return val.trim();
-    }
-    let val = "";
-    while (i < text.length && text[i] !== ',' && text[i] !== '\n' && text[i] !== '\r')
-      val += text[i++];
-    return val.trim();
-  }
-  function parseLine() {
-    const fields = [];
-    while (i < text.length && text[i] !== '\n' && text[i] !== '\r') {
-      fields.push(parseField());
-      if (text[i] === ',') i++;
-    }
-    if (text[i] === '\r') i++;
-    if (text[i] === '\n') i++;
-    return fields;
-  }
-  headers = parseLine().map(h => h.toUpperCase());
-  while (i < text.length) {
-    if (text[i] === '\r' || text[i] === '\n') { i++; continue; }
-    const vals = parseLine();
-    if (!vals.length || (vals.length === 1 && !vals[0])) continue;
-    const obj = {};
-    headers.forEach((h, idx) => obj[h] = vals[idx] || "");
-    results.push(obj);
-  }
-  return results;
+// ── Ticket 2: Score & Color Logic ──
+function getVulnerabilityColor(vuln) {
+  if (!vuln) return "#95a5a6"; 
+  // 公式: (各因素百分比之和) / 500 得到 0-1 的比例
+  const score = (vuln.olderPct + vuln.childPct + vuln.lowIncPct + vuln.disPct + vuln.lepPct) / 500;
+  if (score < 0.07) return "#2ecc71";  // Green (Low)
+  if (score <= 0.12) return "#f39c12"; // Orange (Medium)
+  return "#e74c3c";                    // Red (High)
 }
 
-// ── Distance in miles ──
+// ── Ticket 1 & 2: Make Marker ──
+function makeMarker(lat, lon, color) {
+  return L.circleMarker([lat, lon], {
+    radius: 10, fillColor: color, color: "#fff", weight: 2, fillOpacity: 0.9
+  });
+}
+
+// ── Ticket 3: Popup HTML ──
+function makePopupHTML(hospital, vuln) {
+  let vulnContent = '<p style="color:gray;font-size:11px;">No vulnerability data available</p>';
+  if (vuln) {
+    const factors = [
+      { label: "Elderly", pct: vuln.olderPct, col: "#e74c3c" },
+      { label: "Low Income", pct: vuln.lowIncPct, col: "#8e44ad" },
+      { label: "Disabilities", pct: vuln.disPct, col: "#2980b9" }
+    ];
+    vulnContent = `
+      <table class="vuln-table">
+        ${factors.map(f => `
+          <tr>
+            <td>${f.label}</td>
+            <td style="width:60%"><div class="vuln-bar-bg"><div class="vuln-bar" style="width:${f.pct}%;background:${f.col}"></div></div></td>
+            <td style="text-align:right">${f.pct.toFixed(1)}%</td>
+          </tr>`).join('')}
+      </table>`;
+  }
+  return `<div class="popup-wrap"><h3>${hospital.NAME}</h3>${vulnContent}</div>`;
+}
+
+// ── CSV Parser ──
+function parseCSV(text) {
+  const lines = text.split('\n');
+  const headers = lines[0].split(',').map(h => h.trim().toUpperCase());
+  return lines.slice(1).map(line => {
+    const values = line.split(',');
+    const obj = {};
+    headers.forEach((h, i) => obj[h] = values[i]);
+    return obj;
+  }).filter(h => h.NAME);
+}
+
+// ── Distance Calculation ──
 function distMiles(lat1, lon1, lat2, lon2) {
   const dLat = (lat2 - lat1) * 69;
   const dLon = (lon2 - lon1) * 52;
   return Math.sqrt(dLat * dLat + dLon * dLon);
 }
 
-// ── ZIP → lat/lon ──
-async function getZipCoords(zip) {
-  const res = await fetch(`https://api.zippopotam.us/us/${zip}`);
-  if (!res.ok) return null;
-  const d = await res.json();
-  return {
-    lat: parseFloat(d.places[0].latitude),
-    lon: parseFloat(d.places[0].longitude),
-    city: d.places[0]["place name"],
-    state: d.places[0]["state"]
-  };
-}
-
-// ── Ticket 1: makeMarker ──
-function makeMarker(lat, lon) {
-  return L.circleMarker([lat, lon], {
-    radius: 10,
-    fillColor: '#003087',
-    color: '#ffffff',
-    weight: 2.5,
-    fillOpacity: 0.85
-  });
-}
-
-// ── Ticket 2: loadVulnerability ──
+// ── Load Data ──
 async function loadVulnerability() {
-  if (Object.keys(vulnByNeigh).length > 0) return; // already loaded
-  try {
-    const text = await fetch(VULN_CSV).then(r => r.text());
-    const rows = parseCSV(text);
-
-    // Group by neighborhood, summing population and vulnerability factors
-    const grouped = {};
-    rows.forEach(row => {
-      const name = (row["NAME"] || row["NEIGHBORHOOD"] || "").trim().toUpperCase();
-      if (!name) return;
-      if (!grouped[name]) grouped[name] = { pop: 0, older: 0, child: 0, lowInc: 0, dis: 0, lep: 0 };
-      const g = grouped[name];
-      g.pop    += parseFloat(row["POP"]       || row["TOTALPOP"] || 0) || 0;
-      g.older  += parseFloat(row["OLDERADULT"]|| row["OLDER_ADULT"] || 0) || 0;
-      g.child  += parseFloat(row["TOTCHILD"]  || row["TOT_CHILD"] || row["TОТCHILD"] || 0) || 0;
-      g.lowInc += parseFloat(row["LOW_TO_NO"] || 0) || 0;
-      g.dis    += parseFloat(row["TOTDIS"]    || row["TOT_DIS"] || 0) || 0;
-      g.lep    += parseFloat(row["LEP"]       || 0) || 0;
-    });
-
-    // Calculate percentages
-    for (const [name, g] of Object.entries(grouped)) {
-      if (g.pop <= 0) continue;
-      vulnByNeigh[name] = {
-        olderPct:  (g.older  / g.pop) * 100,
-        childPct:  (g.child  / g.pop) * 100,
-        lowIncPct: (g.lowInc / g.pop) * 100,
-        disPct:    (g.dis    / g.pop) * 100,
-        lepPct:    (g.lep    / g.pop) * 100,
-        pop:       g.pop
+  const text = await fetch(VULN_CSV).then(r => r.text());
+  const rows = parseCSV(text);
+  const grouped = {};
+  rows.forEach(row => {
+    const name = (row.NAME || "").trim().toUpperCase();
+    if (!name) return;
+    if (!grouped[name]) grouped[name] = { pop: 0, older: 0, child: 0, low: 0, dis: 0, lep: 0 };
+    grouped[name].pop += +row.POP100_RE || 0;
+    grouped[name].older += +row.OLDERADULT || 0;
+    grouped[name].child += +row.TOTCHILD || 0;
+    grouped[name].low += +row.LOW_TO_NO || 0;
+    grouped[name].dis += +row.TOTDIS || 0;
+    grouped[name].lep += +row.LEP || 0;
+  });
+  for (let n in grouped) {
+    const g = grouped[n];
+    if (g.pop > 0) {
+      vulnByNeigh[n] = {
+        olderPct: (g.older/g.pop)*100, childPct: (g.child/g.pop)*100,
+        lowIncPct: (g.low/g.pop)*100, disPct: (g.dis/g.pop)*100, lepPct: (g.lep/g.pop)*100
       };
     }
-  } catch (e) {
-    console.warn("Could not load vulnerability data:", e);
   }
 }
 
-// ── Ticket 2: makePopupHTML ──
-function makePopupHTML(hospital, vuln) {
-  const addr = hospital.AD || hospital.ADDRESS || "Address unavailable";
-  const neigh = hospital.NEIGH || hospital.NEIGHBORHOOD || "";
+async function findHospitals() {
+  const zip = document.getElementById("zip").value;
+  if (zip.length < 5) return alert("Enter a 5-digit ZIP");
 
-  let vulnHTML = '';
-  if (vuln) {
-    const bars = [
-      { label: "Elderly (65+)",       pct: vuln.olderPct,  color: "#e74c3c" },
-      { label: "Children (<5)",       pct: vuln.childPct,  color: "#f39c12" },
-      { label: "Low/No Income",       pct: vuln.lowIncPct, color: "#8e44ad" },
-      { label: "Disabilities",        pct: vuln.disPct,    color: "#2980b9" },
-      { label: "Limited English",     pct: vuln.lepPct,    color: "#27ae60" },
-    ];
-    vulnHTML = `
-      <div class="popup-section-title">Neighborhood Vulnerability — ${neigh}</div>
-      <table class="vuln-table">
-        ${bars.map(b => `
-          <tr>
-            <td>${b.label}</td>
-            <td style="width:55%">
-              <div class="vuln-bar-bg"><div class="vuln-bar" style="width:${Math.min(b.pct, 100)}%;background:${b.color}"></div></div>
-            </td>
-            <td>${b.pct.toFixed(1)}%</td>
-          </tr>
-        `).join('')}
-      </table>
-    `;
-  } else if (neigh) {
-    vulnHTML = `<p class="no-vuln">No vulnerability data for ${neigh}</p>`;
-  }
+  const res = await fetch(`https://api.zippopotam.us/us/${zip}`);
+  const data = await res.json();
+  const cLat = +data.places[0].latitude, cLon = +data.places[0].longitude;
 
-  return `
-    <div class="popup-wrap">
-      <h3>${hospital.NAME}</h3>
-      <div class="popup-addr">📍 ${addr}</div>
-      ${vulnHTML}
-    </div>
-  `;
-}
+  const [hospText] = await Promise.all([fetch(HOSPITAL_CSV).then(r => r.text()), loadVulnerability()]);
+  const hospitals = parseCSV(hospText);
+  const radius = +document.getElementById("radius").value;
 
-// ── Render sidebar cards ──
-function renderSidebar(matches, markers) {
+  markersLayer.clearLayers();
   const resultsDiv = document.getElementById("results");
   resultsDiv.innerHTML = "";
-  matches.forEach((h, idx) => {
+
+  const matches = hospitals.map(h => {
+    const match = (h.LOCATION || "").match(/\(([-\d.]+),\s*([-\d.]+)\)/);
+    if (!match) return null;
+    h.lat = +match[1]; h.lon = +match[2];
+    h.dist = distMiles(cLat, cLon, h.lat, h.lon);
+    return h;
+  }).filter(h => h && h.dist <= radius).sort((a,b) => a.dist - b.dist);
+
+  matches.forEach(h => {
+    const neigh = (h.NEIGH || "").trim().toUpperCase();
+    const vuln = vulnByNeigh[neigh];
+    const color = getVulnerabilityColor(vuln);
+    const marker = makeMarker(h.lat, h.lon, color).addTo(markersLayer);
+    marker.bindPopup(makePopupHTML(h, vuln));
+
     const card = document.createElement("div");
     card.className = "hospital-card";
-    card.innerHTML = `
-      <div class="hospital-name">
-        ${h.NAME}
-        <span class="dist-badge">${h.dist.toFixed(1)} mi</span>
-      </div>
-      <div class="hospital-meta">📍 ${h.AD || ""} &nbsp;|&nbsp; 🏙 ${h.NEIGH || ""}</div>
-    `;
+    card.innerHTML = `<div class="hospital-name">${h.NAME}<span class="dist-badge">${h.dist.toFixed(1)} mi</span></div><div style="font-size:11px;color:gray">${h.AD}</div>`;
     card.onclick = () => {
-      document.querySelectorAll(".hospital-card").forEach(c => c.classList.remove("active"));
-      card.classList.add("active");
-      if (markers[idx]) {
-        markers[idx].openPopup();
-        map.panTo([h.lat, h.lon], { animate: true });
-      }
+      map.flyTo([h.lat, h.lon], 14);
+      marker.openPopup();
     };
     resultsDiv.appendChild(card);
   });
+
+  if (matches.length > 0) map.fitBounds(markersLayer.getBounds().pad(0.1));
 }
 
-// ── Main search ──
-async function findHospitals() {
-  const zipInput   = document.getElementById("zip").value.trim();
-  const radius     = parseFloat(document.getElementById("radius").value);
-  const resultsDiv = document.getElementById("results");
-  const loading    = document.getElementById("loading");
-  const sidebarHdr = document.getElementById("sidebar-header");
-
-  if (!zipInput || zipInput.length < 5) {
-    resultsDiv.innerHTML = "<p style='padding:16px;color:#666'>Please enter a valid 5-digit ZIP code.</p>";
-    return;
-  }
-
-  loading.style.display = "block";
-  resultsDiv.innerHTML  = "";
-  markersLayer.clearLayers();
-
-  const coords = await getZipCoords(zipInput);
-  if (!coords) {
-    loading.style.display = "none";
-    resultsDiv.innerHTML = "<p style='padding:16px;color:red'>ZIP code not found.</p>";
-    return;
-  }
-
-  // Fetch hospitals & vulnerability data in parallel
-  const [hospText] = await Promise.all([
-    fetch(HOSPITAL_CSV).then(r => r.text()),
-    loadVulnerability()
-  ]);
-  const hospitals = parseCSV(hospText);
-
-  const coordRx = /\(\s*([-\d.]+),\s*([-\d.]+)\s*\)/;
-  const matches = hospitals.map(h => {
-    const m = (h["LOCATION"] || "").match(coordRx);
-    if (!m) return null;
-    const lat = parseFloat(m[1]), lon = parseFloat(m[2]);
-    if (!lat || !lon) return null;
-    return { ...h, lat, lon, dist: distMiles(coords.lat, coords.lon, lat, lon) };
-  }).filter(h => h && h.dist <= radius).sort((a, b) => a.dist - b.dist);
-
-  loading.style.display = "none";
-
-  if (!matches.length) {
-    sidebarHdr.textContent = `No hospitals within ${radius} miles of ${zipInput}`;
-    resultsDiv.innerHTML = "<p style='padding:16px;color:#666'>Try increasing the search radius.</p>";
-    return;
-  }
-
-  sidebarHdr.textContent = `${matches.length} hospital${matches.length > 1 ? "s" : ""} within ${radius} miles of ${coords.city}, ${coords.state}`;
-
-  // Add markers with popups
-  const markers = matches.map(h => {
-    const marker = makeMarker(h.lat, h.lon);
-    const neighKey = (h.NEIGH || h.NEIGHBORHOOD || "").trim().toUpperCase();
-    const vuln = vulnByNeigh[neighKey] || null;
-    marker.bindPopup(makePopupHTML(h, vuln), { maxWidth: 300 });
-    markersLayer.addLayer(marker);
-    return marker;
-  });
-
-  // Add a subtle marker for the searched ZIP location
-  L.circleMarker([coords.lat, coords.lon], {
-    radius: 7, fillColor: '#e74c3c', color: '#fff', weight: 2, fillOpacity: 0.9
-  }).bindPopup(`<div class="popup-wrap"><h3>📍 ${coords.city}, ${coords.state}</h3><div class="popup-addr">ZIP: ${zipInput}</div></div>`).addTo(markersLayer);
-
-  // Fit map to show all markers
-  map.fitBounds(L.featureGroup([...markers]).getBounds().pad(0.25));
-
-  renderSidebar(matches, markers);
-}
-
-// ── Enter key support ──
-document.getElementById("zip").addEventListener("keydown", e => {
-  if (e.key === "Enter") findHospitals();
-});
-
-// ── Boot ──
 initMap();
 </script>
 </body>
